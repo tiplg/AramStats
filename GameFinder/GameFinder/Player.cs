@@ -6,19 +6,31 @@ using System.Threading.Tasks;
 
 namespace GameFinder
 {
-    class Player
+    public class Player
     {
         public Player(long summonerID)
         {
             SummonerID = summonerID;
+            CheckedUntill = DateTime.MinValue;
         }
+
+        public Player() { }
 
         public long SummonerID { get; set; }
         public long AccountID { get; set; }
         public long TotalMatchesChecked { get; set; }
         public long AramsFound { get; set; }
-        public long CheckedUntill { get; set; }
+        public DateTime CheckedUntill { get; set; }
 
+        public void AddGamesFound(int numGames)
+        {
+            TotalMatchesChecked += numGames;
+        }
+
+        public void AddAramsFound(int numGame)
+        {
+            AramsFound += numGame;
+        }
 
     }
 }
