@@ -20,7 +20,7 @@ namespace GameFinder // EU
             Console.WriteLine("waddup boois");
             Console.WriteLine(apikey);
 
-            var api = RiotApi.GetInstance(apikey, 7, 500); // , 7, 500
+            var api = RiotApi.GetInstance(apikey,8,500); // , 7, 500
 
             Region region;
             List<Region> regions = new List<Region>();
