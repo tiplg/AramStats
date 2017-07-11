@@ -263,3 +263,6 @@ __pycache__/
 /GameFinder/GameFinder/apikey.config
 /GameFinder/GameFinder/apikey.config
 /StatScraper/StatScraper/apikey.config
+/DataPusher/DataPusher
+/DataPusher/DataPusher
+/DataPusher
