@@ -45,7 +45,12 @@ namespace GameFinder // EU
             regions.Add(new Region("kr", RiotSharp.Misc.Region.kr, 2));
 
             Region region = null;
-            region = regions.Find(r => r.name == args[0]);
+            try
+            {
+                region = regions.Find(r => r.name == args[0]);
+            }
+            catch (Exception){ }
+            
 
             while (region == null)
             {
@@ -56,6 +61,8 @@ namespace GameFinder // EU
 
             Console.WriteLine("Region selected: " + region.region.ToString());
             Console.Title = "GameFinder " + region.region.ToString().ToUpper();
+
+            regions.Clear();
 
             while (!link.Ping())
             {
