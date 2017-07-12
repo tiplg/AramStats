@@ -8,17 +8,17 @@ using RiotSharp.Misc;
 
 namespace GameFinder
 {
-    class Region
+    public class Region
     {
-        public Region(string name, RiotSharp.Misc.Region region, string folder)
+        public Region(string name, RiotSharp.Misc.Region region, int regionId)
         {
             this.name = name;
             this.region = region;
-            this.folder = folder;
+            this.regionId = regionId;
         }
 
         public string name;
         public RiotSharp.Misc.Region region;
-        public string folder;
+        public int regionId;
     }
 }
