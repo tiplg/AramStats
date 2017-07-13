@@ -5,7 +5,9 @@ GameFinder uses the GAME-V1.3 API to find aram gameids. It also uses the same ap
 
 StatScraper uses the MATCH-V2.2 to record the stats of aram games. These stats are entered in a database per champion. This database can be used on the website to display statistics per champions such as win rate, pick rate and average cs.
 
-Right now both programs use .xml to save the data this will be changed to mySQL shortly. summonerids are not linked to the gameids so no per player stats are saved.
+Both will be moved to the MATCH-V3 API when RiotSharp gets updated.
+
+Data is saved in a Mysql database.
 
 ## Libraries used
 
