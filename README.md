@@ -1,5 +1,5 @@
 # AramStats
-Tools to find ARAM game stats. Used for HowlingAbyss.xyz.
+Tools to find ARAM game stats. Used for [HowlingAbyss.xyz](http://howlingabyss.xyz).
 
 GameFinder uses the GAME-V1.3 API to find aram gameids. It also uses the same api to find the summonerids of aram player for future scraping of gameids.
 
