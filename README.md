@@ -1,13 +1,11 @@
 # AramStats
 Tools to find ARAM game stats. Used for [HowlingAbyss.xyz](http://howlingabyss.xyz).
 
-GameFinder uses the GAME-V1.3 API to find aram gameids. It also uses the same api to find the summonerids of aram player for future scraping of gameids.
+GameFinder uses the Game-V1.3 API to check the recent matches of known ARAM players. The recent matches get checked against the database. If there are any new aram matches these get added to the database. The players of the aram matches are also added to the database.
 
-StatScraper uses the MATCH-V2.2 to record the stats of aram games. These stats are entered in a database per champion. This database can be used on the website to display statistics per champions such as win rate, pick rate and average cs.
+StatScraper uses the MATCH-V2.2 to record the stats of aram games. These stats are entered in a database per champion. This database can be used by the website to display statistics per champions such as win rate, pick rate and average cs.
 
-Both will be moved to the MATCH-V3 API when RiotSharp gets updated.
-
-Data is saved in a Mysql database.
+Both programs will be moving to MATCH-V3 API when RiotSharp gets updated.
 
 ## Libraries used
 
