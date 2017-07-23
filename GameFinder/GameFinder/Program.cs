@@ -84,6 +84,16 @@ namespace GameFinder // EU
 
             while (players.PlayersAvailable())
             {
+                if (players.players.Count < 5)
+                {
+                    Console.WriteLine("UPLINK TO DATABASE...");
+                    players.UpdatePlayers(link);
+                    gamebase.AddPlayersAndGamesToDatabase(link);
+                    players.LoadFromDatabase(link, 100);
+                    Console.WriteLine("QUIT NOW !");
+                    //System.Threading.Thread.Sleep(5000);
+                    //Console.WriteLine("to late.");
+                }
 
                 try
                 {
@@ -104,7 +114,7 @@ namespace GameFinder // EU
                             if (ex.Message == "429, Rate Limit Exceeded")
                             {
                                 //Console.WriteLine("429, Rate Limit Exceeded");
-                                System.Threading.Thread.Sleep(5000);
+                                System.Threading.Thread.Sleep(10000);
                                 continue;
                             }
                             else
@@ -151,19 +161,6 @@ namespace GameFinder // EU
 
                 players.NextPlayer();
                 
-                
-                if (players.players.Count < 5)
-                {
-                    Console.WriteLine("UPLINK TO DATABASE...");
-                    gamebase.AddPlayersAndGamesToDatabase(link);
-                    players.UpdatePlayers(link);
-                    players.LoadFromDatabase(link, 100);
-                    Console.WriteLine("QUIT NOW !");
-                    System.Threading.Thread.Sleep(5000);
-                    Console.WriteLine("to late.");
-                }
-                
-
                 //players.IncrementIndex();
 
                 //Console.WriteLine("checking player " + players.index + " out of " + players.players.Count +" |" + ((float)players.index/players.players.Count*100 ).ToString("0.00") + "%| Games: " + gamebase.games.Count + " Est Total Games:" + (((float)gamebase.games.Count/ players.index)* players.players.Count).ToString("0"));

@@ -119,9 +119,16 @@ namespace GameFinder
 
             foreach (var game in games)
             {
-                foreach (var player in game.FellowPlayers)
+                if (game.FellowPlayers != null)
                 {
-                    newPlayers.Add(player);
+                    foreach (var player in game.FellowPlayers)
+                    {
+                        newPlayers.Add(player);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("ERROR IN PLAYERS FROM GAME: " + game.GameId);
                 }
             }
 
