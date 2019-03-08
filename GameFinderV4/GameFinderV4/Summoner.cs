@@ -8,6 +8,7 @@ namespace GameFinderV4
 {
     class Summoner
     {
+        public int id { get; set; }
         public string name { get; set; }
         public string puuid { get; set; }
         public string summonerId { get; set; }
@@ -18,11 +19,11 @@ namespace GameFinderV4
         public int summonerlevel { get; set; }
         public int timesChecked { get; set; }
         public int aramsFound { get; set; }
-        public DateTime checkedUntill { get; set; }
+        public DateTime checkedUntil { get; set; }
 
-        public Summoner(string name, string puuid, string summonerId, string accountId, int platformId, int profileIconId, int summonerlevel, int timesChecked, int aramsFound, DateTime checkedUntill)
+        public Summoner(int id, string name, string puuid, string summonerId, string accountId, int platformId, int profileIconId, int summonerlevel, int timesChecked, int aramsFound, DateTime checkedUntil)
         {
-
+            this.id = id;
             this.name = name;
             this.puuid = puuid;
             this.summonerId = summonerId;
@@ -32,15 +33,14 @@ namespace GameFinderV4
             this.summonerlevel = summonerlevel;
             this.timesChecked = timesChecked;
             this.aramsFound = aramsFound;
-            this.checkedUntill = checkedUntill;
-
+            this.checkedUntil = checkedUntil;
         }
 
         public void AddGamesFound(MatchList matchList)
         {
             aramsFound += matchList.TotalGames;
             timesChecked++;
-            checkedUntill = matchList.Matches.Max(t => t.Timestamp).AddSeconds(1);
+            checkedUntil = matchList.Matches.Max(t => t.Timestamp).AddSeconds(1);
         }
 
         internal void NoGamesFound()
