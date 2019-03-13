@@ -49,7 +49,7 @@ namespace GameFinderV4
 
             while (reader.Read())
             {
-                this.summonerList.Add(new Summoner((int)reader["ID"], (string)reader["name"], null, null, (string)reader["accountId"], Convert.ToInt32(reader["platformId"]), 0, 0, Convert.ToInt32(reader["timesChecked"]), Convert.ToInt32(reader["aramsFound"]), (DateTime)reader["checkedUntil"]));
+                this.summonerList.Add(new Summoner(Convert.ToInt32(reader["ID"]), (string)reader["name"], null, null, (string)reader["accountId"], Convert.ToInt32(reader["platformId"]), 0, 0, Convert.ToInt32(reader["timesChecked"]), Convert.ToInt32(reader["aramsFound"]), Convert.ToDateTime(reader["checkedUntil"])));
                 count++;
 
             }
@@ -58,8 +58,13 @@ namespace GameFinderV4
             return (count > 0);
         }
 
-        public void UpdateSummonersToDatabase(MySqlConnection link)
+        public bool UpdateSummonersToDatabase(MySqlConnection link)
         {
+            if (summonerToUpdate.Count < 1)
+            {
+                return false;
+            }
+
             MySqlCommand cmd = link.CreateCommand();
             string q = "INSERT INTO summoners(`ID`,`timesChecked`,`aramsFound`,`checkedUntil`) VALUES";
 
@@ -73,9 +78,13 @@ namespace GameFinderV4
             q += " ON DUPLICATE KEY UPDATE `aramsFound`= VALUES(`aramsFound`),`timesChecked`= VALUES(`timesChecked`),`checkedUntil`= VALUES(`checkedUntil`);";
 
             cmd.CommandText = q;
+           // Console.WriteLine(q);
+
             cmd.ExecuteNonQuery();
 
             summonerToUpdate.Clear();
+
+            return true;
         }
     }
 }

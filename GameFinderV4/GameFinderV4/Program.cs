@@ -59,15 +59,16 @@ namespace GameFinderV4
             {
                 if (!summonerBase.SummonersAvailable())
                 {
+                    gameBase.UpdateGamesToDatabase(link);
                     //load new or break
-                    if(summonerBase.LoadFromDatabase(link, 100)){
+                    if (summonerBase.LoadFromDatabase(link, 100)){
                         Console.WriteLine("Loaded new players from database");
                     }
                     else
                     {
                         Console.WriteLine("Could not load new players from database");
                         break;
-                    }
+                    } 
                 }
 
                 try
@@ -77,7 +78,9 @@ namespace GameFinderV4
 
                     foreach (MatchReference match in gameListResult.Result.Matches)
                     {
-                        gameBase.AddNewGame(match.GameId, match.PlatformID, match.Timestamp);
+                        //Console.WriteLine(match.PlatformID.GetHashCode() + " " + match.Region.GetHashCode());
+                        
+                        gameBase.AddNewGame(match.GameId, Region.euw.GetHashCode(), match.Season.GetHashCode(), match.Timestamp);
                     }
 
                     summonerBase.CurrentSummoner().AddGamesFound(gameListResult.Result);
@@ -96,7 +99,6 @@ namespace GameFinderV4
                     else
                         Console.WriteLine(ex.ToString());
                 }
-
 
                 summonerBase.NextSummoner();
             }
