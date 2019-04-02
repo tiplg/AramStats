@@ -15,6 +15,7 @@ namespace GameFinderV4
         {
             MySqlConnection link;
             link = new MySqlConnection(ConfigurationManager.AppSettings["MySqlConnectionString"]);
+            int timeoutTimetime = 1;
 
             while (!link.Ping())
             {
@@ -59,15 +60,24 @@ namespace GameFinderV4
             {
                 if (!summonerBase.SummonersAvailable())
                 {
+                    tryagain:
                     gameBase.UpdateGamesToDatabase(link);
                     //load new or break
                     if (summonerBase.LoadFromDatabase(link, 100)){
                         Console.WriteLine("Loaded new players from database");
+                        timeoutTimetime = 1;
                     }
                     else
                     {
-                        Console.WriteLine("Could not load new players from database");
-                        break;
+                        if(timeoutTimetime > 5)
+                        {
+                            Console.WriteLine("Could not load new players from database: Breaking");
+                            break;
+                        }
+                        Console.WriteLine("Could not load new players from database: Timeout "+ timeoutTimetime + " minute");
+                        System.Threading.Thread.Sleep(timeoutTimetime * 60000);
+                        timeoutTimetime++;
+                        goto tryagain;
                     } 
                 }
 

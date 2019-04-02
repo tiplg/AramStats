@@ -35,11 +35,47 @@ namespace GameFinderV4
         {
             if (gameList.Count < 1)
             {
+                //Console.WriteLine("0/0 Games added to database");
                 return false;
             }
 
+            int numberOfgames = gameList.Count;
+
+            MySqlDataReader reader;
             MySqlCommand cmd = link.CreateCommand();
-            string q = "INSERT INTO games(`gameId`,`platformId`,`season`,`gameCreation`) VALUES";
+            string q;
+
+
+            // remove known games
+            q = "SELECT `gameId` FROM `games` WHERE `platformId` = 2 AND `gameId` in ("; //TODO region selection
+
+            foreach (var game in gameList)
+            {
+                q += (game.gameId + ",");
+            }
+
+            q = q.Remove(q.Length - 1);
+            q += ");";
+
+            cmd.CommandText = q;
+            reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                gameList.RemoveAll(g => g.gameId == Convert.ToInt64(reader["gameId"]));
+            }
+            reader.Close();
+
+
+            // if still new games add them
+            if (gameList.Count < 1)
+            {
+                Console.WriteLine("0/" + numberOfgames.ToString() + " Games added to database");
+
+                return false;
+            }
+
+            q = "INSERT INTO games(`gameId`,`platformId`,`season`,`gameCreation`) VALUES";
 
             foreach (var game in gameList)
             {
@@ -55,7 +91,7 @@ namespace GameFinderV4
 
             cmd.ExecuteNonQuery();
 
-            Console.WriteLine(gameList.Count + " Games added to database");
+            Console.WriteLine(gameList.Count.ToString() + "/" + numberOfgames.ToString() + " Games added to database");
 
             gameList.Clear();
 
