@@ -8,7 +8,7 @@ namespace AramData
 {
     public class Game
     {
-        public Game(Int64 gameId, Int16 platformId, Int16 season, DateTime gameCreation)
+        public Game(Int64 gameId, int platformId, int season, DateTime gameCreation)
         {
             this.gameId = gameId;
             this.platformId = platformId;
@@ -16,7 +16,7 @@ namespace AramData
             this.gameCreation = gameCreation;
         }
 
-        public Game(int iD, long gameId, short platformId, short season, short scrapeIndex, short gameDuration, DateTime gameCreation)
+        public Game(int iD, long gameId, int platformId, int season, short scrapeIndex, short gameDuration, DateTime gameCreation)
         {
             this.ID = iD;
             this.gameId = gameId;
@@ -29,8 +29,8 @@ namespace AramData
 
         public int ID { get; set; }
         public Int64 gameId { get; set; }
-        public Int16 platformId { get; set; }
-        public Int16 season { get; set; }
+        public int platformId { get; set; }
+        public int season { get; set; }
         public Int16 scrapeIndex { get; set; }
         public Int16 gameDuration { get; set; }
         public DateTime gameCreation { get; set; }

@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -35,7 +36,8 @@ namespace GameFinderV4
             }
 
             Console.WriteLine("Conncection to Database: " + link.Ping());
-            var api = RiotApi.GetDevelopmentInstance(ConfigurationManager.AppSettings["RiotApiKey"]);
+            //var api = RiotApi.(ConfigurationManager.AppSettings["RiotApiKey"], 500, 30000);
+            var api = RiotApi.GetInstance(ConfigurationManager.AppSettings["RiotApiKey"], 495, 29500);
 
             try
             {
@@ -85,33 +87,66 @@ namespace GameFinderV4
                     }
                 }
 
+                if(gameBase.gameList.Count> 10000)
+                {
+                    gameBase.NewGamesToDatabase(link);
+                    summonerBase.UpdateSummonersToDatabase(link);
+                }
+
                 try
                 {
+                    int beginIndex = 0;
+                    MatchList gameListResult;
+                    DateTime checkedUntil = DateTime.FromBinary(0);
 
-                    var gameListResult = api.Match.GetMatchListAsync(Region.euw, summonerBase.CurrentSummoner().accountId, null, new List<int>(new int[] { 450 }), null, summonerBase.CurrentSummoner().checkedUntil, null, null, null);
-
-                    foreach (MatchReference match in gameListResult.Result.Matches)
+                    do
                     {
-                        //Console.WriteLine(match.PlatformID.GetHashCode() + " " + match.Region.GetHashCode());
+                        gameListResult = api.Match.GetMatchListAsync(Region.euw, summonerBase.CurrentSummoner().accountId, null, new List<int>(new int[] { 450 }), null, summonerBase.CurrentSummoner().checkedUntil, null, beginIndex, null).Result;
 
-                        gameBase.AddNewGame(match.GameId, Region.euw.GetHashCode(), match.Season.GetHashCode(), match.Timestamp);
-                    }
+                        foreach (MatchReference match in gameListResult.Matches)
+                        {
+                            gameBase.AddNewGame(match.GameId, match.PlatformID.GetHashCode(), match.Season.GetHashCode(), match.Timestamp);
+                        }
 
-                    summonerBase.CurrentSummoner().AddGamesFound(gameListResult.Result);
+                        
 
-                    Console.WriteLine(gameListResult.Result.Matches.Count.ToString() + " games added from summoner: " + summonerBase.CurrentSummoner().name);
+                        if (beginIndex == 0) //only run first loop
+                        {
+                            checkedUntil = gameListResult.Matches.Max(t => t.Timestamp).AddSeconds(1);
+                        }
+
+                        beginIndex += 100;
+                    } while (gameListResult.TotalGames > beginIndex);
+
+                    summonerBase.CurrentSummoner().AddGamesFound(gameListResult.TotalGames, checkedUntil);
+
+                    Console.WriteLine(gameListResult.TotalGames.ToString() + " games added from summoner: " + summonerBase.CurrentSummoner().name);
                 }
-                catch (Exception ex)
+                catch (AggregateException aex)
                 {
                     // Handle the exception however you want.
-
-                    if (ex.InnerException.Message == "404, Resource not found")
+                    foreach (RiotSharpException ex in aex.InnerExceptions)
                     {
-                        Console.WriteLine("No new games for summoner: " + summonerBase.CurrentSummoner().name); // TODO 
-                        summonerBase.CurrentSummoner().NoGamesFound();
+                        if (ex.HttpStatusCode == HttpStatusCode.NotFound)
+                        {
+                            Console.WriteLine("No new games for summoner: " + summonerBase.CurrentSummoner().name); // TODO 
+                            summonerBase.CurrentSummoner().NoGamesFound();
+                        }
+                        else if (ex.HttpStatusCode == (HttpStatusCode)429)
+                        {
+                            Console.WriteLine("Api code: To many request\n");
+                        }
+                        else if (ex.HttpStatusCode == HttpStatusCode.ServiceUnavailable)
+                        {
+                            Console.WriteLine("Api code: service unavailable\n");
+                        }
+                        else
+                            Console.WriteLine(ex.ToString());
                     }
-                    else
-                        Console.WriteLine(ex.ToString());
+
+                    summonerBase.CurrentSummoner().AddGamesFound(0, DateTime.FromBinary(0));
+                    System.Threading.Thread.Sleep(10000);
+
                 }
 
                 summonerBase.NextSummoner();

@@ -25,7 +25,21 @@ namespace AramData
 
         public void AddSummoner(Summoner summoner)
         {
+
             summonerList.Add(summoner);
+        }
+
+        public bool AddUniqueSummoner(Summoner summoner)
+        { 
+            if (summonerList.Any(s => s.accountId == summoner.accountId)) // if not a new summoner
+            {
+                return false;
+            }
+            else
+            {
+                summonerList.Add(summoner);
+                return true;
+            }
         }
 
         public bool SummonersAvailable()
@@ -45,7 +59,7 @@ namespace AramData
 
             var count = 0;
             MySqlCommand cmd = link.CreateCommand();
-            cmd.CommandText = string.Format("SELECT `ID`, `name`,`platformId`,`accountId`,`timesChecked`,`aramsFound`,`checkedUntil` FROM `summoners` WHERE `platformId` = {0} AND `timesChecked` = 0 LIMIT 0,{1};", 2, limit);
+            cmd.CommandText = string.Format("SELECT `ID`, `name`,`platformId`,`accountId`,`timesChecked`,`aramsFound`,`checkedUntil` FROM `summoners` WHERE `platformId` = {0} AND `timesChecked` = 0 LIMIT 0,{1};", 8, limit);
             MySqlDataReader reader = cmd.ExecuteReader();
 
             while (reader.Read())
@@ -59,9 +73,73 @@ namespace AramData
             return (count > 0);
         }
 
-        public void NewSummonersToDatabase(MySqlConnection link)
+        public bool NewSummonersToDatabase(MySqlConnection link)
         {
-            throw new NotImplementedException();
+            if (summonerList.Count < 1)
+            {
+                //Console.WriteLine("0/0 Games added to database");
+                return false;
+            }
+
+            int numberOfsummoners = summonerList.Count;
+
+            MySqlDataReader reader;
+            MySqlCommand cmd = link.CreateCommand();
+            string q;
+
+
+            // remove known summoners
+            q = "SELECT `accountId` FROM `summoners` WHERE `platformId` = 8 AND `accountId` in (\""; //TODO region selection
+
+            foreach (var summoner in summonerList)
+            {
+                q += (summoner.accountId + "\",\"");
+            }
+
+            q = q.Remove(q.Length - 2);
+            q += ");";
+
+             cmd.CommandText = q;
+            reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                summonerList.RemoveAll(s => s.accountId == (string)reader["accountId"]);
+            }
+            reader.Close();
+
+
+            //no new summoners found
+            if (summonerList.Count < 1)
+            {
+                Console.WriteLine("0/" + numberOfsummoners.ToString() + " summoners added to database");
+
+                return false;
+            }
+
+            // if still new summoners add them
+
+            q = "INSERT INTO summoners(`name`,`platformId`,`accountId`,`summonerId`,`profileIconId`) VALUES";
+
+            foreach (var summoner in summonerList)
+            {
+                //Console.WriteLine(string.Format("UPDATE players SET `totalMatchesChecked`='{0}', `aramsFound`='{1}', `checkedUntil` = '{2}'  WHERE `summonerId` = {3} AND `regionId` = {4};", CurrentPlayer().TotalMatchesChecked, CurrentPlayer().AramsFound, CurrentPlayer().CheckedUntill.ToString("yyyy-MM-dd HH:mm:ss"), CurrentPlayer().SummonerID, region.regionId));
+                q += string.Format("(\"{0}\",{1},\"{2}\",\"{3}\",{4}),", summoner.name, summoner.platformId.GetHashCode(), summoner.accountId, summoner.summonerId, summoner.profileIconId);
+            }
+
+            q = q.Remove(q.Length - 1);
+            q += ";";
+
+            cmd.CommandText = q;
+            // Console.WriteLine(q);
+
+            cmd.ExecuteNonQuery();
+
+            Console.WriteLine(summonerList.Count.ToString() + "/" + numberOfsummoners.ToString() + " summoners added to database");
+
+            summonerList.Clear();
+
+            return true;
         }
 
         public bool UpdateSummonersToDatabase(MySqlConnection link)

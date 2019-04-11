@@ -19,7 +19,7 @@ namespace AramData
         public List<Game> gameList { get; set; }
         public List<Game> gamesToUpdate { get; set; }
 
-        public bool AddNewGame(Int64 gameId, Int16 platform, Int16 season, DateTime timestamp)
+        public bool AddNewGame(Int64 gameId, int platform, int season, DateTime timestamp)
         {
             Game game = new Game(gameId, platform, season, timestamp);
 
@@ -44,13 +44,25 @@ namespace AramData
             return gameList.Count > 0;
         }
 
+        public Game CurrentGame()
+        {
+            return gameList[0];
+        }
+
+        public void NextGame()
+        {
+            gamesToUpdate.Add(gameList[0]);
+            gameList.RemoveAt(0);
+        }
+
         public bool LoadFromDatabase(MySqlConnection link, int limit)
         {
             UpdateGamesToDatabase(link);
 
             var count = 0;
+
             MySqlCommand cmd = link.CreateCommand();
-            cmd.CommandText = string.Format("SELECT `ID`, `gameId`,`platformId`,`season`,`scrapeIndex`,`gameDuration`,`gameCreation` FROM `games` WHERE `platformId` = {0} AND `scrapeIndex` = 0 LIMIT 0,{1};", 2, limit);
+            cmd.CommandText = string.Format("SELECT `ID`, `gameId`,`platformId`,`season`,`scrapeIndex`,`gameDuration`,`gameCreation` FROM `games` WHERE `platformId` = {0} AND `scrapeIndex` = 0 LIMIT 0,{1};", 8, limit);
             MySqlDataReader reader = cmd.ExecuteReader();
 
             while (reader.Read())
@@ -62,7 +74,7 @@ namespace AramData
 
             return (count > 0);
         }
-
+        
         private bool UpdateGamesToDatabase(MySqlConnection link)
         {
             if (gamesToUpdate.Count < 1)
@@ -71,27 +83,27 @@ namespace AramData
             }
 
             MySqlCommand cmd = link.CreateCommand();
-            string q = "INSERT INTO games(`ID`,`timesChecked`,`aramsFound`,`checkedUntil`) VALUES";
+            string q = "INSERT INTO games(`ID`,`scrapeIndex`,`gameDuration`) VALUES";
 
-            foreach (var summoner in summonerToUpdate)
+            foreach (var game in gamesToUpdate)
             {
                 //Console.WriteLine(string.Format("UPDATE players SET `totalMatchesChecked`='{0}', `aramsFound`='{1}', `checkedUntil` = '{2}'  WHERE `summonerId` = {3} AND `regionId` = {4};", CurrentPlayer().TotalMatchesChecked, CurrentPlayer().AramsFound, CurrentPlayer().CheckedUntill.ToString("yyyy-MM-dd HH:mm:ss"), CurrentPlayer().SummonerID, region.regionId));
-                q += string.Format("({0},{1},{2},'{3}'),", summoner.id, summoner.timesChecked, summoner.aramsFound, summoner.checkedUntil.ToString("yyyy-MM-dd HH:mm:ss"));
+                q += string.Format("({0},{1},{2}),", game.ID, game.scrapeIndex, game.gameDuration);
             }
 
             q = q.Remove(q.Length - 1);
-            q += " ON DUPLICATE KEY UPDATE `aramsFound`= VALUES(`aramsFound`),`timesChecked`= VALUES(`timesChecked`),`checkedUntil`= VALUES(`checkedUntil`);";
+            q += " ON DUPLICATE KEY UPDATE `scrapeIndex`= VALUES(`scrapeIndex`),`gameDuration`= VALUES(`gameDuration`);";
 
             cmd.CommandText = q;
             // Console.WriteLine(q);
 
             cmd.ExecuteNonQuery();
 
-            summonerToUpdate.Clear();
+            gamesToUpdate.Clear();
 
             return true;
         }
-
+        
         public bool NewGamesToDatabase(MySqlConnection link)
         {
             if (gameList.Count < 1)
@@ -108,7 +120,7 @@ namespace AramData
 
 
             // remove known games
-            q = "SELECT `gameId` FROM `games` WHERE `platformId` = 2 AND `gameId` in ("; //TODO region selection
+            q = "SELECT `gameId` FROM `games` WHERE `platformId` = 8 AND `gameId` in ("; //TODO region selection
 
             foreach (var game in gameList)
             {
@@ -131,7 +143,7 @@ namespace AramData
             // if still new games add them
             if (gameList.Count < 1)
             {
-                Console.WriteLine("0/" + numberOfgames.ToString() + " Games added to database");
+                Console.WriteLine("0/" + numberOfgames.ToString() + " Games added to database\n");
 
                 return false;
             }
@@ -152,7 +164,7 @@ namespace AramData
 
             cmd.ExecuteNonQuery();
 
-            Console.WriteLine(gameList.Count.ToString() + "/" + numberOfgames.ToString() + " Games added to database");
+            Console.WriteLine(gameList.Count.ToString() + "/" + numberOfgames.ToString() + " Games added to database\n");
 
             gameList.Clear();
 

@@ -37,11 +37,11 @@ namespace AramData
             this.checkedUntil = checkedUntil;
         }
 
-        public void AddGamesFound(MatchList matchList)
+        public void AddGamesFound(int totalGames, DateTime checkedUntil)
         {
-            aramsFound += matchList.TotalGames;
+            aramsFound += totalGames;
             timesChecked++;
-            checkedUntil = matchList.Matches.Max(t => t.Timestamp).AddSeconds(1);
+            this.checkedUntil = checkedUntil;
         }
 
         public void NoGamesFound()

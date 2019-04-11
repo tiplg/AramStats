@@ -36,7 +36,9 @@ namespace SummonerFinderV4
             }
 
             Console.WriteLine("Conncection to Database: " + link.Ping());
-            var api = RiotApi.GetDevelopmentInstance(ConfigurationManager.AppSettings["RiotApiKey"]);
+            //var api = RiotApi.GetDevelopmentInstance(ConfigurationManager.AppSettings["RiotApiKey"]);
+            var api = RiotApi.GetInstance(ConfigurationManager.AppSettings["RiotApiKey"],495,29500);
+
 
             try
             {
@@ -59,7 +61,7 @@ namespace SummonerFinderV4
             //summonerBase.AddSummoner(sips);
 
             //summonerBase.LoadFromDatabase(link, 100);
-
+            
             while (true)
             {
                 if (!gameBase.GamesAvailable())
@@ -69,17 +71,17 @@ namespace SummonerFinderV4
                     //load new or break
                     if (gameBase.LoadFromDatabase(link, 100))
                     {
-                        Console.WriteLine("Loaded new players from database");
+                        Console.WriteLine("Loaded new games from database");
                         timeoutTimetime = 1;
                     }
                     else
                     {
                         if (timeoutTimetime > 5)
                         {
-                            Console.WriteLine("Could not load new players from database: Breaking");
+                            Console.WriteLine("Could not load new games from database: Breaking");
                             break;
                         }
-                        Console.WriteLine("Could not load new players from database: Timeout " + timeoutTimetime + " minute");
+                        Console.WriteLine("Could not load new games from database: Timeout " + timeoutTimetime + " minute");
                         System.Threading.Thread.Sleep(timeoutTimetime * 60000);
                         timeoutTimetime++;
                         goto tryagain;
@@ -90,18 +92,16 @@ namespace SummonerFinderV4
                 try
                 {
 
-                    var gameListResult = api.Match.GetMatchListAsync(Region.euw, summonerBase.CurrentSummoner().accountId, null, new List<int>(new int[] { 450 }), null, summonerBase.CurrentSummoner().checkedUntil, null, null, null);
+                    var matchResult = api.Match.GetMatchAsync(Region.euw, gameBase.CurrentGame().gameId).Result;
 
-                    foreach (MatchReference match in gameListResult.Result.Matches)
+                    foreach (ParticipantIdentity pId in matchResult.ParticipantIdentities)
                     {
+                        var summoner = pId.Player;
                         //Console.WriteLine(match.PlatformID.GetHashCode() + " " + match.Region.GetHashCode());
-
-                        gameBase.AddNewGame(match.GameId, Region.euw.GetHashCode(), match.Season.GetHashCode(), match.Timestamp);
+                        summonerBase.AddUniqueSummoner(new Summoner(0, summoner.SummonerName, null, summoner.SummonerId, summoner.CurrentAccountId, summoner.CurrentPlatformId.GetHashCode(), summoner.ProfileIcon, 0, 0, 0, DateTime.FromBinary(0)));
                     }
 
-                    summonerBase.CurrentSummoner().AddGamesFound(gameListResult.Result);
-
-                    Console.WriteLine(gameListResult.Result.Matches.Count.ToString() + " games added from summoner: " + summonerBase.CurrentSummoner().name);
+                    Console.WriteLine("added summoners from game: " + gameBase.CurrentGame().gameId);
                 }
                 catch (Exception ex)
                 {
@@ -109,20 +109,23 @@ namespace SummonerFinderV4
 
                     if (ex.InnerException.Message == "404, Resource not found")
                     {
-                        Console.WriteLine("No new games for summoner: " + summonerBase.CurrentSummoner().name); // TODO 
-                        summonerBase.CurrentSummoner().NoGamesFound();
+                        Console.WriteLine("Error 404: " + gameBase.CurrentGame().gameId); // TODO 
                     }
                     else
                         Console.WriteLine(ex.ToString());
+
+                    System.Threading.Thread.Sleep(10000); 
                 }
 
-                summonerBase.NextSummoner();
+                gameBase.CurrentGame().scrapeIndex = 1;
+                gameBase.NextGame();
             }
-
+            
             End:
             Console.WriteLine("Hello World!");
             Console.ReadKey();
 
         }
+
     }
 }
