@@ -44,6 +44,11 @@ namespace AramData
             return gameList.Count > 0;
         }
 
+        public int GamesScrapable(int sIndex)
+        {
+            return gameList.Count(x => x.scrapeIndex < sIndex);
+        }
+
         public Game CurrentGame()
         {
             return gameList[0];
@@ -77,7 +82,7 @@ namespace AramData
         
         private bool UpdateGamesToDatabase(MySqlConnection link)
         {
-            if (gamesToUpdate.Count < 1)
+            if (gameList.Count(x => x.scrapeIndex == 1) < 1) //todo different indices
             {
                 return false;
             }
@@ -85,10 +90,14 @@ namespace AramData
             MySqlCommand cmd = link.CreateCommand();
             string q = "INSERT INTO games(`ID`,`scrapeIndex`,`gameDuration`) VALUES";
 
-            foreach (var game in gamesToUpdate)
+            foreach (var game in gameList)
             {
+                if (game.scrapeIndex == 1)
+                {
+                    q += string.Format("({0},{1},{2}),", game.ID, game.scrapeIndex, game.gameDuration);
+                }
                 //Console.WriteLine(string.Format("UPDATE players SET `totalMatchesChecked`='{0}', `aramsFound`='{1}', `checkedUntil` = '{2}'  WHERE `summonerId` = {3} AND `regionId` = {4};", CurrentPlayer().TotalMatchesChecked, CurrentPlayer().AramsFound, CurrentPlayer().CheckedUntill.ToString("yyyy-MM-dd HH:mm:ss"), CurrentPlayer().SummonerID, region.regionId));
-                q += string.Format("({0},{1},{2}),", game.ID, game.scrapeIndex, game.gameDuration);
+               
             }
 
             q = q.Remove(q.Length - 1);
@@ -98,8 +107,9 @@ namespace AramData
             // Console.WriteLine(q);
 
             cmd.ExecuteNonQuery();
+            gameList.Clear();
 
-            gamesToUpdate.Clear();
+            //gamesToUpdate.Clear();
 
             return true;
         }

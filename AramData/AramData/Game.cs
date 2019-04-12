@@ -27,6 +27,11 @@ namespace AramData
             this.gameCreation = gameCreation;
         }
 
+        public bool IsScraped(int sIndex)
+        {
+            return scrapeIndex >= sIndex;
+        }
+
         public int ID { get; set; }
         public Int64 gameId { get; set; }
         public int platformId { get; set; }
