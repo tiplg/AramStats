@@ -22,7 +22,10 @@ namespace SummonerFinderV4
             Stopwatch stopWatch = new Stopwatch();
             link = new MySqlConnection(ConfigurationManager.AppSettings["MySqlConnectionString"]);
             int timeoutTimetime = 1;
-            int sample = 30 * 30;
+
+            int batch = 50;
+            int sample = 500;
+            
 
             while (!link.Ping())
             {
@@ -64,7 +67,9 @@ namespace SummonerFinderV4
             //summonerBase.AddSummoner(sips);
 
             //summonerBase.LoadFromDatabase(link, 100);
-            
+
+            stopWatch.Start();
+
             while (true)
             {
                 if (gameBase.GamesScrapable(1) < 1)
@@ -72,7 +77,7 @@ namespace SummonerFinderV4
                     tryagain:
                     summonerBase.NewSummonersToDatabase(link);
                     //load new or break
-                    if (gameBase.LoadFromDatabase(link, 30*30))
+                    if (gameBase.LoadFromDatabase(link, sample))
                     {
                         timeoutTimetime = 1;
                         Console.WriteLine("Loaded "+ sample + " new games from database");
@@ -91,64 +96,153 @@ namespace SummonerFinderV4
                     }
                 }
                 //here
+                Match matchData = null;
+                Game game = gameBase.gameList.Find(g => g.scrapeIndex < 1);
 
+                
                 try
                 {
-                    /*
-                    var matchResult = api.Match.GetMatchAsync(Region.euw, gameBase.CurrentGame().gameId).Result;
+                    matchData = api.Match.GetMatchAsync(Region.euw, game.gameId).Result;
+                    game.scrapeIndex = 1;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.ToString());
+                    game.scrapeIndex = 10;
+                    System.Threading.Thread.Sleep(10000);
+                }
+                
 
-                    foreach (ParticipantIdentity pId in matchResult.ParticipantIdentities)
+                if (matchData != null)
+                {
+                    foreach (ParticipantIdentity pId in matchData.ParticipantIdentities)
                     {
                         var summoner = pId.Player;
                         //Console.WriteLine(match.PlatformID.GetHashCode() + " " + match.Region.GetHashCode());
                         summonerBase.AddUniqueSummoner(new Summoner(0, summoner.SummonerName, null, summoner.SummonerId, summoner.CurrentAccountId, summoner.CurrentPlatformId.GetHashCode(), summoner.ProfileIcon, 0, 0, 0, DateTime.FromBinary(0)));
                     }
-
-                    Console.WriteLine("added summoners from game: " + gameBase.CurrentGame().gameId);
-                    */
-
-                    //AddSummonersFromMatchAsync(api,gameBase.CurrentGame(),summonerBase,gameBase).Wait();
-                    
-                    stopWatch.Start();
-                    var results = AddSummonersFromMatchAsync(api,summonerBase,gameBase,30).Result;
-                    stopWatch.Stop();
-
-                    foreach (var match in results)
-                    {
-                        foreach (ParticipantIdentity pId in match.ParticipantIdentities)
-                        {
-                            var summoner = pId.Player;
-                            //Console.WriteLine(match.PlatformID.GetHashCode() + " " + match.Region.GetHashCode());
-                            summonerBase.AddUniqueSummoner(new Summoner(0, summoner.SummonerName, null, summoner.SummonerId, summoner.CurrentAccountId, summoner.CurrentPlatformId.GetHashCode(), summoner.ProfileIcon, 0, 0, 0, DateTime.FromBinary(0)));
-                        }
-                    }
-
-                    
-                    Console.WriteLine(gameBase.gameList.Count-gameBase.GamesScrapable(1) +"/" + gameBase.gameList.Count + " Batch time: " + stopWatch.ElapsedMilliseconds);
-                    stopWatch.Reset();
-                    //System.Threading.Thread.Sleep(3000);
                 }
-                catch (Exception ex)
+
+                if ((gameBase.gameList.Count - gameBase.GamesScrapable(1))%batch == 0)
                 {
-                    // Handle the exception however you want.
-                    Console.WriteLine(ex.ToString());
-
-                    System.Threading.Thread.Sleep(10000); 
+                    stopWatch.Stop();
+                    Console.WriteLine(DateTime.Now.ToString("HH:mm:ss") + "\t" + (gameBase.gameList.Count - gameBase.GamesScrapable(1)) + "/" + gameBase.gameList.Count + " Dt: " + stopWatch.ElapsedMilliseconds / batch);
+                    stopWatch.Reset();
+                    stopWatch.Start();
                 }
 
-                //gameBase.CurrentGame().scrapeIndex = 1;
-                //gameBase.NextGame();
+
+            /*
+            try
+            {
+
+                var matchResult = api.Match.GetMatchAsync(Region.euw, gameBase.CurrentGame().gameId).Result;
+
+                foreach (ParticipantIdentity pId in matchResult.ParticipantIdentities)
+                {
+                    var summoner = pId.Player;
+                    //Console.WriteLine(match.PlatformID.GetHashCode() + " " + match.Region.GetHashCode());
+                    summonerBase.AddUniqueSummoner(new Summoner(0, summoner.SummonerName, null, summoner.SummonerId, summoner.CurrentAccountId, summoner.CurrentPlatformId.GetHashCode(), summoner.ProfileIcon, 0, 0, 0, DateTime.FromBinary(0)));
+                }
+
+                Console.WriteLine("added summoners from game: " + gameBase.CurrentGame().gameId);
+
+
+                //AddSummonersFromMatchAsync(api,gameBase.CurrentGame(),summonerBase,gameBase).Wait();
+
+                stopWatch.Start();
+                //var results = GetMatchesFromApiAsync(api,summonerBase,gameBase,30);
+                //var results = api.Match.GetMatchAsync(Region.euw,)
+                var results = GetMatchesFromApiParallel(api, gameBase, 30);
+                stopWatch.Stop();
+
+                foreach (var match in results)
+                {
+                    foreach (ParticipantIdentity pId in match.ParticipantIdentities)
+                    {
+                        var summoner = pId.Player;
+                        //Console.WriteLine(match.PlatformID.GetHashCode() + " " + match.Region.GetHashCode());
+                        summonerBase.AddUniqueSummoner(new Summoner(0, summoner.SummonerName, null, summoner.SummonerId, summoner.CurrentAccountId, summoner.CurrentPlatformId.GetHashCode(), summoner.ProfileIcon, 0, 0, 0, DateTime.FromBinary(0)));
+                    }
+                }
+
+
+                Console.WriteLine(gameBase.gameList.Count-gameBase.GamesScrapable(1) +"/" + gameBase.gameList.Count + " Dt: " + stopWatch.ElapsedMilliseconds/batch);
+                stopWatch.Reset();
+                //System.Threading.Thread.Sleep(3000);
             }
-            
+            catch (Exception ex)
+            {
+                // Handle the exception however you want.
+                Console.WriteLine(ex.ToString());
+
+                //System.Threading.Thread.Sleep(10000); 
+            }
+
+            //gameBase.CurrentGame().scrapeIndex = 1;
+            //gameBase.NextGame();
+            */
+        }
+        
             End:
             Console.WriteLine("Hello World!");
             Console.ReadKey();
 
         }
 
-        private static async Task<Match[]> AddSummonersFromMatchAsync(RiotApi api, SummonerBase summonerBase, GameBase gameBase, int limit)
+        public static List<Match> GetMatchesFromApiParallel(RiotApi api, GameBase gameBase, int limit)
+        {
+            List<Match> output = new List<Match>();
+
+            Parallel.ForEach<Game>(gameBase.gameList.FindAll(g => g.scrapeIndex < 1).GetRange(0,limit), async (game) =>
+            {
+                Match result = DownloadMatch(api, Region.euw, game.gameId).Result;
+
+                try
+                {
+
+                }
+                catch (Exception e)
+                {
+                    throw;
+                }
+
+                if (result != null)
+                {
+                    output.Add(result);
+                    game.scrapeIndex = 1;
+                }
+                else
+                {
+                    Console.WriteLine(game.gameId);
+                }
+                
+            });
+
+            return output;
+        }
+
+        private static async Task<Match> DownloadMatch(RiotApi api, Region region, long gameId)
+        {
+            Match matchData;
+            try
+            {
+                matchData = await api.Match.GetMatchAsync(region, gameId);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+                matchData = null;
+            }
+
+            return matchData;
+
+        }
+
+        private static  List<Match> GetMatchesFromApiAsync(RiotApi api, SummonerBase summonerBase, GameBase gameBase, int limit)
         {
             List<Task<Match>> tasks = new List<Task<Match>>();
+            List<Match> matchList = new List<Match>();
 
             foreach (var game in gameBase.gameList)
             {
@@ -156,8 +250,9 @@ namespace SummonerFinderV4
 
                 if (game.scrapeIndex == 0)
                 {
-                    tasks.Add(api.Match.GetMatchAsync(Region.euw, game.gameId));     
-                    game.scrapeIndex = 1;
+                    tasks.Add(api.Match.GetMatchAsync(Region.euw, game.gameId));    
+                    //tasks.Add(DownloadMatch(api, Region.euw, game.gameId));
+                    game.scrapeIndex = 1; //TODO check if actually scraped
 
                     limit--;
                 }
@@ -165,15 +260,35 @@ namespace SummonerFinderV4
 
             try
             {
-                return await Task.WhenAll(tasks);
+                Task.WhenAll(tasks);
             }
             catch (RiotSharpException ex)
             {
                 Console.WriteLine(ex.HttpStatusCode);
-                System.Threading.Thread.Sleep(10000);
-                return null;
+                
+                //tasks.Clear();
+                
+                foreach (var task in tasks)
+                {
+                    task.Dispose();
+                    //Console.WriteLine("Task - IsFaulted: " + task.IsFaulted + "     IsCanceled: " + task.IsCanceled + "     IsCompleted: " + task.IsCompleted);
+
+                   
+                }
+                
+                //System.Threading.Thread.Sleep(10000);
+                
             }
-           
+
+            foreach (var match in tasks)
+            {
+                if(match.Result != null)
+                {
+                    matchList.Add(match.Result);
+                }
+            }
+
+            return matchList;
             
 
             /*

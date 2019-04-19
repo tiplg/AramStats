@@ -120,29 +120,11 @@ namespace GameFinderV4
 
                     summonerBase.CurrentSummoner().AddGamesFound(gameListResult.TotalGames, checkedUntil);
 
-                    Console.WriteLine(gameListResult.TotalGames.ToString() + " games added from summoner: " + summonerBase.CurrentSummoner().name);
+                    Console.WriteLine(DateTime.Now.ToString("HH:mm:ss") + "\t" + gameListResult.TotalGames.ToString() + " games added from summoner: " + summonerBase.CurrentSummoner().name);
                 }
-                catch (AggregateException aex)
+                catch (Exception e)
                 {
-                    // Handle the exception however you want.
-                    foreach (RiotSharpException ex in aex.InnerExceptions)
-                    {
-                        if (ex.HttpStatusCode == HttpStatusCode.NotFound)
-                        {
-                            Console.WriteLine("No new games for summoner: " + summonerBase.CurrentSummoner().name); // TODO 
-                            summonerBase.CurrentSummoner().NoGamesFound();
-                        }
-                        else if (ex.HttpStatusCode == (HttpStatusCode)429)
-                        {
-                            Console.WriteLine("Api code: To many request\n");
-                        }
-                        else if (ex.HttpStatusCode == HttpStatusCode.ServiceUnavailable)
-                        {
-                            Console.WriteLine("Api code: service unavailable\n");
-                        }
-                        else
-                            Console.WriteLine(ex.ToString());
-                    }
+                    Console.WriteLine(e.ToString());
 
                     summonerBase.CurrentSummoner().AddGamesFound(0, DateTime.FromBinary(0));
                     System.Threading.Thread.Sleep(10000);
