@@ -53,13 +53,13 @@ namespace AramData
             summonerList.RemoveAt(0);
         }
 
-        public bool LoadFromDatabase(MySqlConnection link, int limit)
+        public bool LoadFromDatabase(MySqlConnection link, int start, int limit)
         {
             UpdateSummonersToDatabase(link);
 
             var count = 0;
             MySqlCommand cmd = link.CreateCommand();
-            cmd.CommandText = string.Format("SELECT `ID`, `name`,`platformId`,`accountId`,`timesChecked`,`aramsFound`,`checkedUntil` FROM `summoners` WHERE `platformId` = {0} AND `timesChecked` = 0 LIMIT 0,{1};", 8, limit);
+            cmd.CommandText = string.Format("SELECT `ID`, `name`,`platformId`,`accountId`,`timesChecked`,`aramsFound`,`checkedUntil` FROM `summoners` WHERE `platformId` = {0} AND `timesChecked` = 0 LIMIT {1},{2};", 8, start, limit);
             MySqlDataReader reader = cmd.ExecuteReader();
 
             while (reader.Read())
@@ -159,7 +159,7 @@ namespace AramData
             }
 
             q = q.Remove(q.Length - 1);
-            q += " ON DUPLICATE KEY UPDATE `aramsFound`= VALUES(`aramsFound`),`timesChecked`= VALUES(`timesChecked`),`checkedUntil`= VALUES(`checkedUntil`);";
+            q += " ON DUPLICATE KEY UPDATE `aramsFound`= `aramsFound` + VALUES(`aramsFound`),`timesChecked`= `timesChecked` + 1,`checkedUntil`= VALUES(`checkedUntil`);";
 
             cmd.CommandText = q;
             // Console.WriteLine(q);

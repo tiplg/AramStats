@@ -17,6 +17,20 @@ namespace GameFinderV4
     {
         static void Main(string[] args)
         {
+            int ClientNumber = -1;
+            try
+            {
+                ClientNumber = Convert.ToInt32(args[0]);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Enter client number argument");
+                Console.ReadKey();
+                return;
+            }
+            Console.WriteLine("Client Number: " + ClientNumber.ToString());
+
+
             MySqlConnection link;
             link = new MySqlConnection(ConfigurationManager.AppSettings["MySqlConnectionString"]);
             int timeoutTimetime = 1;
@@ -68,7 +82,7 @@ namespace GameFinderV4
                 tryagain:
                     gameBase.NewGamesToDatabase(link);
                     //load new or break
-                    if (summonerBase.LoadFromDatabase(link, 100))
+                    if (summonerBase.LoadFromDatabase(link, ClientNumber*5000, 100))
                     {
                         Console.WriteLine("Loaded new players from database");
                         timeoutTimetime = 1;

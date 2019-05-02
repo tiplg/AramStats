@@ -142,7 +142,7 @@ namespace AramData
 
             cmd.CommandText = q;
             reader = cmd.ExecuteReader();
-
+            //TODO try
             while (reader.Read())
             {
                 gameList.RemoveAll(g => g.gameId == Convert.ToInt64(reader["gameId"]));
