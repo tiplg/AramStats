@@ -18,6 +18,20 @@ namespace SummonerFinderV4
     {
         static void Main(string[] args)
         {
+            int ClientNumber = -1;
+            try
+            {
+                ClientNumber = Convert.ToInt32(args[0]);
+                Console.Title = "SummonerFinderV4 Client #" + ClientNumber.ToString();
+                Console.WriteLine("Client Number: " + ClientNumber.ToString());
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Enter client number argument");
+                Console.ReadKey();
+                return;
+            }
+
             MySqlConnection link;
             Stopwatch stopWatch = new Stopwatch();
             link = new MySqlConnection(ConfigurationManager.AppSettings["MySqlConnectionString"]);
@@ -77,10 +91,10 @@ namespace SummonerFinderV4
                     tryagain:
                     summonerBase.NewSummonersToDatabase(link);
                     //load new or break
-                    if (gameBase.LoadFromDatabase(link, sample))
+                    if (gameBase.LoadFromDatabase(link, ClientNumber*5000, sample))
                     {
                         timeoutTimetime = 1;
-                        Console.WriteLine("Loaded "+ sample + " new games from database");
+                        Console.WriteLine("Loaded " + sample + " new games from database, First Game: " + gameBase.gameList[0].gameId);
                     }
                     else
                     {
@@ -105,11 +119,29 @@ namespace SummonerFinderV4
                     matchData = api.Match.GetMatchAsync(Region.euw, game.gameId).Result;
                     game.scrapeIndex = 1;
                 }
-                catch (Exception e)
+                catch (AggregateException e)
                 {
-                    Console.WriteLine(e.ToString());
-                    game.scrapeIndex = 10;
-                    System.Threading.Thread.Sleep(10000);
+                    Console.WriteLine("Error with game: " + game.gameId);
+                    //Console.WriteLine(e.ToString());
+
+                    string em = e.InnerException.Message;
+
+                    if (e.InnerException.Message.Contains("A task"))
+                    {
+                        Console.WriteLine(em);
+                        api = RiotApi.GetInstance(ConfigurationManager.AppSettings["RiotApiKey"], 495, 29500);
+                    }
+                    else if(em.StartsWith("500") || em.StartsWith("503") || em.StartsWith("504")  || em.StartsWith("429"))
+                    {
+                        Console.WriteLine(em);
+                    }
+                    else
+                    {
+                        Console.WriteLine("\nOther Error\n");
+                        Console.WriteLine(e.ToString());
+                    }
+
+                    System.Threading.Thread.Sleep(5000);
                 }
                 
 

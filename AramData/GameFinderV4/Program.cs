@@ -6,6 +6,7 @@ using RiotSharp.Misc;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -17,10 +18,16 @@ namespace GameFinderV4
     {
         static void Main(string[] args)
         {
+            Stopwatch stopWatch1 = new Stopwatch();
+            Stopwatch stopWatch2 = new Stopwatch();
+            long countje = 0;
+
             int ClientNumber = -1;
             try
             {
                 ClientNumber = Convert.ToInt32(args[0]);
+                Console.Title = "GameFinderV4 Client #" + ClientNumber.ToString();
+                Console.WriteLine("Client Number: " + ClientNumber.ToString());
             }
             catch (Exception)
             {
@@ -28,7 +35,7 @@ namespace GameFinderV4
                 Console.ReadKey();
                 return;
             }
-            Console.WriteLine("Client Number: " + ClientNumber.ToString());
+            
 
 
             MySqlConnection link;
@@ -75,6 +82,8 @@ namespace GameFinderV4
 
             //summonerBase.LoadFromDatabase(link, 100);
 
+            stopWatch2.Start();
+
             while (true)
             {
                 if (!summonerBase.SummonersAvailable())
@@ -82,7 +91,7 @@ namespace GameFinderV4
                 tryagain:
                     gameBase.NewGamesToDatabase(link);
                     //load new or break
-                    if (summonerBase.LoadFromDatabase(link, ClientNumber*5000, 100))
+                    if (summonerBase.LoadFromDatabase(link, ClientNumber*5000, 500))
                     {
                         Console.WriteLine("Loaded new players from database");
                         timeoutTimetime = 1;
@@ -101,28 +110,60 @@ namespace GameFinderV4
                     }
                 }
 
-                if(gameBase.gameList.Count> 10000)
+                if(gameBase.gameList.Count > 10000)
                 {
+                    //stopWatch2.Stop();
+                    Console.WriteLine("batchtime: " + stopWatch2.ElapsedMilliseconds / countje);
+                    //stopWatch2.Reset();
+                    //stopWatch2.Start();
+
                     gameBase.NewGamesToDatabase(link);
                     summonerBase.UpdateSummonersToDatabase(link);
+
                 }
 
-                try
-                {
-                    int beginIndex = 0;
-                    MatchList gameListResult;
-                    DateTime checkedUntil = DateTime.FromBinary(0);
 
-                    do
+                int beginIndex = 0;
+                MatchList gameListResult = new MatchList();
+                DateTime checkedUntil = DateTime.FromBinary(0);
+                stopWatch1.Start();
+                do
+                {
+                    try
                     {
                         gameListResult = api.Match.GetMatchListAsync(Region.euw, summonerBase.CurrentSummoner().accountId, null, new List<int>(new int[] { 450 }), null, summonerBase.CurrentSummoner().checkedUntil, null, beginIndex, null).Result;
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Error with Summoner: " + summonerBase.CurrentSummoner().name);
+                        //Console.WriteLine(e.ToString());
 
+                        string em = e.InnerException.Message;
+
+                        if (e.InnerException.Message.Contains("A task"))
+                        {
+                            Console.WriteLine(em);
+                            api = RiotApi.GetInstance(ConfigurationManager.AppSettings["RiotApiKey"], 495, 29500);
+                        }
+                        else if (em.StartsWith("500") || em.StartsWith("503") || em.StartsWith("504") || em.StartsWith("429"))
+                        {
+                            Console.WriteLine(em);
+                        }
+                        else
+                        {
+                            Console.WriteLine("\nOther Error\n");
+                            Console.WriteLine(e.ToString());
+                        }
+
+                        System.Threading.Thread.Sleep(5000);
+                    }
+
+                    if (gameListResult.Matches != null)
+                    {
                         foreach (MatchReference match in gameListResult.Matches)
                         {
                             gameBase.AddNewGame(match.GameId, match.PlatformID.GetHashCode(), match.Season.GetHashCode(), match.Timestamp);
                         }
-
-                        
 
                         if (beginIndex == 0) //only run first loop
                         {
@@ -130,22 +171,26 @@ namespace GameFinderV4
                         }
 
                         beginIndex += 100;
-                    } while (gameListResult.TotalGames > beginIndex);
+                        countje++;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+
+                    
+                } while (gameListResult.TotalGames > beginIndex);
+                if (gameListResult.Matches != null)
+                {
+                    stopWatch1.Stop();
 
                     summonerBase.CurrentSummoner().AddGamesFound(gameListResult.TotalGames, checkedUntil);
 
-                    Console.WriteLine(DateTime.Now.ToString("HH:mm:ss") + "\t" + gameListResult.TotalGames.ToString() + " games added from summoner: " + summonerBase.CurrentSummoner().name);
+                    Console.WriteLine(DateTime.Now.ToString("HH:mm:ss") + "  dt: " + stopWatch1.ElapsedMilliseconds / ((gameListResult.TotalGames + 99) / 100) + "\t" + gameListResult.TotalGames.ToString() + " games added from summoner: " + summonerBase.CurrentSummoner().name);
+                    stopWatch1.Reset();
+
+                    summonerBase.NextSummoner();
                 }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.ToString());
-
-                    summonerBase.CurrentSummoner().AddGamesFound(0, DateTime.FromBinary(0));
-                    System.Threading.Thread.Sleep(10000);
-
-                }
-
-                summonerBase.NextSummoner();
             }
 
 

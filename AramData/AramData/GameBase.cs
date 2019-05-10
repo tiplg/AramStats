@@ -60,14 +60,14 @@ namespace AramData
             gameList.RemoveAt(0);
         }
 
-        public bool LoadFromDatabase(MySqlConnection link, int limit)
+        public bool LoadFromDatabase(MySqlConnection link, int start, int limit)
         {
             UpdateGamesToDatabase(link);
 
             var count = 0;
 
             MySqlCommand cmd = link.CreateCommand();
-            cmd.CommandText = string.Format("SELECT `ID`, `gameId`,`platformId`,`season`,`scrapeIndex`,`gameDuration`,`gameCreation` FROM `games` WHERE `platformId` = {0} AND `scrapeIndex` = 0 LIMIT 0,{1};", 8, limit);
+            cmd.CommandText = string.Format("SELECT `ID`, `gameId`,`platformId`,`season`,`scrapeIndex`,`gameDuration`,`gameCreation` FROM `games` WHERE `platformId` = {0} AND `scrapeIndex` = 0 LIMIT {1},{2};", 8, start, limit);
             MySqlDataReader reader = cmd.ExecuteReader();
 
             while (reader.Read())
@@ -126,6 +126,7 @@ namespace AramData
 
             MySqlDataReader reader;
             MySqlCommand cmd = link.CreateCommand();
+            cmd.CommandTimeout = 300;// 2 mins?
             string q;
 
 
